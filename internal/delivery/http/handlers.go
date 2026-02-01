@@ -32,6 +32,11 @@ func (p *Provider) ShortenHttp() http.HandlerFunc {
 
 		shortenedURL, err := p.Usecase.Shorten(originalURL)
 		if err != nil {
+			if domain.IsShortenedAlreadyExistsErr(err) {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
 			internalError(w)
 			return
 		}
@@ -48,7 +53,6 @@ func (p *Provider) ShortenHttp() http.HandlerFunc {
 
 func (p *Provider) RedirectHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Got new request in redirect: %w", r)
 		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -61,7 +65,6 @@ func (p *Provider) RedirectHttp() http.HandlerFunc {
 		}()
 
 		originalReq := r.Body
-		log.Print("originalReq: %w", originalReq)
 		defer func() {
 			err := originalReq.Close()
 			if err != nil {
@@ -77,6 +80,11 @@ func (p *Provider) RedirectHttp() http.HandlerFunc {
 
 		originalURL, err := p.Usecase.Redirect(shortURL)
 		if err != nil {
+			if domain.IsOriginalNotFoundErr(err) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
 			internalError(w)
 			return
 		}

@@ -29,5 +29,3 @@ func NewOriginalURL(oURL string) (OriginalURL, error) {
 		OriginalURL: oURL,
 	}, nil
 }
-
-type ID int

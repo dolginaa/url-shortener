@@ -1,8 +1,6 @@
 package usecase
 
 import (
-	"fmt"
-
 	"github.com/dolginaa/url-shortener/internal/domain"
 )
 
@@ -13,7 +11,7 @@ func (us UrlShortener) Redirect(shortURL domain.ShortenedURL) (domain.OriginalUR
 	}
 
 	if len(originalURL.OriginalURL) == 0 {
-		return domain.OriginalURL{}, fmt.Errorf("original url for '%s' doesn't exist in storage", shortURL)
+		return domain.OriginalURL{}, domain.NewOriginalNotFoundErr(shortURL)
 	}
 
 	return originalURL, nil
