@@ -1,12 +1,14 @@
 package http
 
-import "net/http"
+import (
+	"github.com/gorilla/mux"
+)
 
-func RouteHttp() {
-	mux := http.NewServeMux()
+func RouteHttp() *mux.Router {
+	mux := mux.NewRouter()
 
-	mux.Handle("/shorten", ShortenHttp())
-	mux.Handle("/redirect", RedirectHttp())
+	mux.HandleFunc("/shorten", ShortenHttp()).Methods("GET")
+	mux.Handle("/redirect", RedirectHttp()).Methods("POST")
 
-	//mux.ServeHTTP()
+	return mux
 }

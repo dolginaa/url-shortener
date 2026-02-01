@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/dolginaa/url-shortener/internal/domain"
 	"github.com/dolginaa/url-shortener/internal/usecase/redirect"
@@ -12,16 +13,12 @@ import (
 
 func ShortenHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if contentType := r.Header.Get("Content-Type"); contentType != "json" {
+		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		originalReq, err := r.GetBody()
-		if err != nil {
-			internalError(w)
-			return
-		}
+		originalReq := r.Body
 		defer func() {
 			err := originalReq.Close()
 			if err != nil {
@@ -30,7 +27,7 @@ func ShortenHttp() http.HandlerFunc {
 		}()
 
 		var originalURL domain.OriginalURL
-		if err = json.NewDecoder(originalReq).Decode(&originalURL); err != nil {
+		if err := json.NewDecoder(originalReq).Decode(&originalURL); err != nil {
 			internalError(w)
 			return
 		}
@@ -41,27 +38,32 @@ func ShortenHttp() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
 		if err = json.NewEncoder(w).Encode(shortenedURL); err != nil {
 			internalError(w)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
 func RedirectHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if contentType := r.Header.Get("Content-Type"); contentType != "json" {
+		log.Print("Got new request in redirect: %w", r)
+		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		originalReq, err := r.GetBody()
-		if err != nil {
-			internalError(w)
-			return
-		}
+		defer func() {
+			if err := r.Body.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}()
+
+		originalReq := r.Body
+		log.Print("originalReq: %w", originalReq)
 		defer func() {
 			err := originalReq.Close()
 			if err != nil {
@@ -70,8 +72,7 @@ func RedirectHttp() http.HandlerFunc {
 		}()
 
 		var shortURL domain.ShortenedURL
-		json.NewDecoder(originalReq).Buffered()
-		if err = json.NewDecoder(originalReq).Decode(&shortURL); err != nil {
+		if err := json.NewDecoder(originalReq).Decode(&shortURL); err != nil {
 			internalError(w)
 			return
 		}
@@ -82,12 +83,13 @@ func RedirectHttp() http.HandlerFunc {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
 		if err = json.NewEncoder(w).Encode(originalURL); err != nil {
 			internalError(w)
 			return
 		}
-
-		w.WriteHeader(http.StatusOK)
 	}
 }
 
