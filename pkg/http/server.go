@@ -21,8 +21,7 @@ func NewServer(mux *mux.Router) Server {
 
 func (s *Server) Start() {
 	log.Print("Starting...")
-	//http.Handle("/", s.mux)
 	if err := http.ListenAndServe(s.addr, s.mux); err != nil {
-		log.Fatal("failed to start server: %w", err)
+		log.Fatalf("failed to start server: %v", err)
 	}
 }

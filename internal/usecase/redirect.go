@@ -4,7 +4,7 @@ import (
 	"github.com/dolginaa/url-shortener/internal/domain"
 )
 
-func (us UrlShortener) Redirect(shortURL domain.ShortenedURL) (domain.OriginalURL, error) {
+func (us URLShortener) Redirect(shortURL domain.ShortenedURL) (domain.OriginalURL, error) {
 	originalURL, err := us.storage.GetByShort(shortURL)
 	if err != nil {
 		return domain.OriginalURL{}, err

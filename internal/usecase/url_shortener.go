@@ -2,7 +2,7 @@ package usecase
 
 import "github.com/dolginaa/url-shortener/internal/domain"
 
-type UrlShortener struct {
+type URLShortener struct {
 	storage ShortenerStorage
 
 	aliasMap map[string]string
@@ -13,12 +13,12 @@ var defaultAliasMap = map[string]string{
 	"custom-params-string": "test",
 }
 
-func NewUrlShortener(storage ShortenerStorage, aliasMap map[string]string) UrlShortener {
+func NewURLShortener(storage ShortenerStorage, aliasMap map[string]string) URLShortener {
 	if len(aliasMap) == 0 {
 		aliasMap = defaultAliasMap
 	}
 
-	return UrlShortener{
+	return URLShortener{
 		storage:  storage,
 		aliasMap: aliasMap,
 	}

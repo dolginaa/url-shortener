@@ -10,8 +10,8 @@ type OriginalNotFoundErr struct {
 	shortenedURL ShortenedURL
 }
 
-func NewOriginalNotFoundErr(shortenedUrl ShortenedURL) error {
-	return OriginalNotFoundErr{shortenedUrl}
+func NewOriginalNotFoundErr(shortenedURL ShortenedURL) error {
+	return OriginalNotFoundErr{shortenedURL}
 }
 
 func (e OriginalNotFoundErr) Error() string {

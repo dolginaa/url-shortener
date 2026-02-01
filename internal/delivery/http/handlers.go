@@ -9,31 +9,40 @@ import (
 	"github.com/dolginaa/url-shortener/internal/domain"
 )
 
-func (p *Provider) ShortenHttp() http.HandlerFunc {
+type shortenRequest struct {
+	OriginalURL string `json:"original_url"`
+}
+
+func (p *Handler) ShortenHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		originalReq := r.Body
+		body := r.Body
 		defer func() {
-			err := originalReq.Close()
-			if err != nil {
-				log.Fatal(err)
+			if err := body.Close(); err != nil {
+				log.Print(err)
 			}
 		}()
 
-		var originalURL domain.OriginalURL
-		if err := json.NewDecoder(originalReq).Decode(&originalURL); err != nil {
+		var req shortenRequest
+		if err := json.NewDecoder(body).Decode(&req); err != nil {
 			internalError(w)
 			return
 		}
 
-		shortenedURL, err := p.Usecase.Shorten(originalURL)
+		originalURL, err := domain.NewOriginalURL(req.OriginalURL)
+		if err != nil {
+			badRequest(w)
+			return
+		}
+
+		shortenedURL, err := p.URLShortener.Shorten(originalURL)
 		if err != nil {
 			if domain.IsShortenedAlreadyExistsErr(err) {
-				w.WriteHeader(http.StatusBadRequest)
+				badRequest(w)
 				return
 			}
 
@@ -51,34 +60,37 @@ func (p *Provider) ShortenHttp() http.HandlerFunc {
 	}
 }
 
-func (p *Provider) RedirectHttp() http.HandlerFunc {
+type redirectRequest struct {
+	ShortenedURL string `json:"shortened_url"`
+}
+
+func (p *Handler) RedirectHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
+		body := r.Body
 		defer func() {
-			if err := r.Body.Close(); err != nil {
-				log.Fatal(err)
+			if err := body.Close(); err != nil {
+				log.Print(err)
 			}
 		}()
 
-		originalReq := r.Body
-		defer func() {
-			err := originalReq.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}()
-
-		var shortURL domain.ShortenedURL
-		if err := json.NewDecoder(originalReq).Decode(&shortURL); err != nil {
+		var req redirectRequest
+		if err := json.NewDecoder(body).Decode(&req); err != nil {
 			internalError(w)
 			return
 		}
 
-		originalURL, err := p.Usecase.Redirect(shortURL)
+		shortURL, err := domain.NewShortenedURL(req.ShortenedURL)
+		if err != nil {
+			badRequest(w)
+			return
+		}
+
+		originalURL, err := p.URLShortener.Redirect(shortURL)
 		if err != nil {
 			if domain.IsOriginalNotFoundErr(err) {
 				w.WriteHeader(http.StatusNotFound)
@@ -99,6 +111,14 @@ func (p *Provider) RedirectHttp() http.HandlerFunc {
 	}
 }
 
+func badRequest(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte(`{"error":"invalid request"}`))
+}
+
 func internalError(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("internal server error"))
 }

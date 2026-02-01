@@ -11,14 +11,14 @@ func main() {
 	// init storage
 	storage := infrastructure.NewStorage()
 
-	// init usecase
-	usecase := usecase.NewUrlShortener(storage, nil)
+	// init shortenerUC
+	shortenerUC := usecase.NewURLShortener(storage, nil)
 
-	// init http provider
-	httpProvider := delivery_http.NewProvider(usecase)
+	// init http handler
+	httpHandler := delivery_http.NewHandler(shortenerUC)
 
 	// init server
-	s := http.NewServer(httpProvider.RouteHttp())
+	s := http.NewServer(httpHandler.Route())
 
 	// start server
 	s.Start()

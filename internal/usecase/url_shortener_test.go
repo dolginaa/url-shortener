@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"github.com/dolginaa/url-shortener/internal/domain"
-	"github.com/go-jose/go-jose/v4/testutils/assert"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestShortenUrl(t *testing.T) {
+func TestUrlShortener_Shorten(t *testing.T) {
 	t.Parallel()
 
 	getByShortMockRes := map[string]StorageGetMockResult{
@@ -47,13 +47,13 @@ func TestShortenUrl(t *testing.T) {
 
 	storageMock := NewStorageMock(getByShortMockRes, saveMockRes)
 
-	urlShortener := NewUrlShortener(storageMock, aliasMap)
+	urlShortener := NewURLShortener(storageMock, aliasMap)
 
 	tests := []struct {
 		name                 string
 		originalURL          domain.OriginalURL
 		expectedShortenedURL domain.ShortenedURL
-		expectedErr          error
+		assertErr            func(error) bool
 	}{
 		{
 			name: "valid shortening - ok",
@@ -69,14 +69,9 @@ func TestShortenUrl(t *testing.T) {
 			originalURL: domain.OriginalURL{
 				OriginalURL: "github.com/adolgina/before",
 			},
-			expectedErr: domain.NewShortenedAlreadyExistsErr(
-				domain.ShortenedURL{
-					ShortenedURL: "github.com/adolgina/after",
-				},
-				domain.OriginalURL{
-					OriginalURL: "github.com/adolgina/before",
-				},
-			),
+			assertErr: func(err error) bool {
+				return domain.IsShortenedAlreadyExistsErr(err)
+			},
 		},
 		{
 			name: "short exists for same original - ok",
@@ -90,17 +85,21 @@ func TestShortenUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resShourenedURL, err := urlShortener.Shorten(tt.originalURL)
-			if tt.expectedErr != nil {
-				assert.Error(t, err, tt.expectedErr.Error())
+			t.Parallel()
+
+			resShortenedURL, err := urlShortener.Shorten(tt.originalURL)
+			if tt.assertErr != nil {
+				assert.Error(t, err)
+				assert.True(t, tt.assertErr(err), "unexpected error type")
 				return
 			}
-			assert.Equal(t, resShourenedURL, tt.expectedShortenedURL)
+			assert.NoError(t, err)
+			assert.Equal(t, resShortenedURL, tt.expectedShortenedURL)
 		})
 	}
 }
 
-func TestRedirectUrl(t *testing.T) {
+func TestUrlShortener_Redirect(t *testing.T) {
 	t.Parallel()
 
 	getByShortMockRes := map[string]StorageGetMockResult{
@@ -126,13 +125,13 @@ func TestRedirectUrl(t *testing.T) {
 
 	storageMock := NewStorageMock(getByShortMockRes, nil)
 
-	urlShortener := NewUrlShortener(storageMock, aliasMap)
+	urlShortener := NewURLShortener(storageMock, aliasMap)
 
 	tests := []struct {
 		name                string
 		shortenedURL        domain.ShortenedURL
 		expectedOriginalURL domain.OriginalURL
-		expectedErr         error
+		assertErr           func(error) bool
 	}{
 		{
 			name: "valid redirect - ok",
@@ -148,20 +147,22 @@ func TestRedirectUrl(t *testing.T) {
 			shortenedURL: domain.ShortenedURL{
 				ShortenedURL: "github.com/adolgina/after",
 			},
-			expectedErr: domain.NewOriginalNotFoundErr(
-				domain.ShortenedURL{
-					ShortenedURL: "github.com/adolgina/after",
-				},
-			),
+			assertErr: func(err error) bool {
+				return domain.IsOriginalNotFoundErr(err)
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			resOriginalURL, err := urlShortener.Redirect(tt.shortenedURL)
-			if tt.expectedErr != nil {
-				assert.Error(t, err, tt.expectedErr.Error())
+			if tt.assertErr != nil {
+				assert.Error(t, err)
+				assert.True(t, tt.assertErr(err), "unexpected error type")
 				return
 			}
+			assert.NoError(t, err)
 			assert.Equal(t, resOriginalURL, tt.expectedOriginalURL)
 		})
 	}

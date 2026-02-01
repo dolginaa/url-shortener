@@ -2,15 +2,15 @@ package http
 
 import "github.com/dolginaa/url-shortener/internal/domain"
 
-type Usecase interface {
+type URLShortener interface {
 	Shorten(domain.OriginalURL) (domain.ShortenedURL, error)
 	Redirect(domain.ShortenedURL) (domain.OriginalURL, error)
 }
 
-type Provider struct {
-	Usecase Usecase
+type Handler struct {
+	URLShortener URLShortener
 }
 
-func NewProvider(usecase Usecase) *Provider {
-	return &Provider{Usecase: usecase}
+func NewHandler(urlShortener URLShortener) *Handler {
+	return &Handler{URLShortener: urlShortener}
 }
