@@ -2,24 +2,32 @@ package domain
 
 import "fmt"
 
-type ShortenedURL string
+type ShortenedURL struct {
+	ShortenedURL string `json:"shortened_url"`
+}
 
 func NewShortenedURL(sURL string) (ShortenedURL, error) {
 	if len(sURL) == 0 {
-		return "", fmt.Errorf("shortened url cannot be empty")
+		return ShortenedURL{}, fmt.Errorf("shortened url cannot be empty")
 	}
 
-	return ShortenedURL(sURL), nil
+	return ShortenedURL{
+		ShortenedURL: sURL,
+	}, nil
 }
 
-type OriginalURL string
+type OriginalURL struct {
+	OriginalURL string `json:"original_url"`
+}
 
 func NewOriginalURL(oURL string) (OriginalURL, error) {
 	if len(oURL) == 0 {
-		return "", fmt.Errorf("original url cannot be empty")
+		return OriginalURL{}, fmt.Errorf("original url cannot be empty")
 	}
 
-	return OriginalURL(oURL), nil
+	return OriginalURL{
+		OriginalURL: oURL,
+	}, nil
 }
 
 type ID int

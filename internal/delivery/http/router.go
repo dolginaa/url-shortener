@@ -4,11 +4,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func RouteHttp() *mux.Router {
+func (p *Provider) RouteHttp() *mux.Router {
 	mux := mux.NewRouter()
 
-	mux.HandleFunc("/shorten", ShortenHttp()).Methods("GET")
-	mux.Handle("/redirect", RedirectHttp()).Methods("POST")
+	mux.HandleFunc("/shorten", p.ShortenHttp()).Methods("GET")
+	mux.Handle("/redirect", p.RedirectHttp()).Methods("POST")
 
 	return mux
 }

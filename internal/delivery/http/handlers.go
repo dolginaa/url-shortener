@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"github.com/dolginaa/url-shortener/internal/domain"
-	"github.com/dolginaa/url-shortener/internal/usecase/redirect"
-	"github.com/dolginaa/url-shortener/internal/usecase/shorten"
 )
 
-func ShortenHttp() http.HandlerFunc {
+func (p *Provider) ShortenHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
 			w.WriteHeader(http.StatusBadRequest)
@@ -32,7 +30,7 @@ func ShortenHttp() http.HandlerFunc {
 			return
 		}
 
-		shortenedURL, err := shorten.Shorten(originalURL)
+		shortenedURL, err := p.Usecase.Shorten(originalURL)
 		if err != nil {
 			internalError(w)
 			return
@@ -48,7 +46,7 @@ func ShortenHttp() http.HandlerFunc {
 	}
 }
 
-func RedirectHttp() http.HandlerFunc {
+func (p *Provider) RedirectHttp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Print("Got new request in redirect: %w", r)
 		if contentType := r.Header.Get("Content-Type"); !strings.Contains(contentType, "application/json") {
@@ -77,7 +75,7 @@ func RedirectHttp() http.HandlerFunc {
 			return
 		}
 
-		originalURL, err := redirect.Redirect(shortURL)
+		originalURL, err := p.Usecase.Redirect(shortURL)
 		if err != nil {
 			internalError(w)
 			return
